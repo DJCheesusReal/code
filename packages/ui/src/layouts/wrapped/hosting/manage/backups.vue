@@ -100,7 +100,7 @@
 						>
 							<template #actions>
 								<ButtonStyled type="outlined">
-									<button class="!border !border-surface-4" @click="clearBackupFilters">
+									<button @click="clearBackupFilters">
 										{{ formatMessage(messages.clearFilters) }}
 									</button>
 								</ButtonStyled>
@@ -160,6 +160,7 @@
 				</div>
 
 				<FloatingActionBar
+					below-modal
 					:shown="selectedIds.size > 0 || isBulkOperating"
 					:aria-label="
 						formatMessage(messages.bulkBarAriaLabel, {
