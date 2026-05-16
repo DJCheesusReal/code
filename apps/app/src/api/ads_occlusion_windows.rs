@@ -1,8 +1,7 @@
-use windows::Win32::Foundation::{HWND, POINT, RECT};
+use windows::Win32::Foundation::{HWND, RECT};
 use windows::Win32::Graphics::Dwm::{
     DWMWA_CLOAKED, DWMWA_EXTENDED_FRAME_BOUNDS, DwmGetWindowAttribute,
 };
-use windows::Win32::Graphics::Gdi::ClientToScreen;
 use windows::Win32::UI::WindowsAndMessaging::{
     GA_ROOT, GW_HWNDNEXT, GetAncestor, GetTopWindow, GetWindow, GetWindowRect,
     GetWindowThreadProcessId, IsIconic, IsWindowVisible,
@@ -10,24 +9,17 @@ use windows::Win32::UI::WindowsAndMessaging::{
 
 const OCCLUDED_AREA_THRESHOLD: f64 = 0.95;
 
-pub fn is_ads_webview_occluded(
-    main_hwnd: HWND,
-    x: i32,
-    y: i32,
-    width: u32,
-    height: u32,
-) -> bool {
-    let Some(ad_rect) = ad_rect_in_screen(main_hwnd, x, y, width, height)
-    else {
+pub fn is_app_window_occluded(main_hwnd: HWND) -> bool {
+    let Some(app_window_rect) = window_rect(main_hwnd) else {
         return false;
     };
 
-    if is_empty_rect(&ad_rect) {
+    if is_empty_rect(&app_window_rect) {
         return false;
     }
 
-    let ad_area = rect_area(&ad_rect);
-    if ad_area == 0 {
+    let window_area = rect_area(&app_window_rect);
+    if window_area == 0 {
         return false;
     }
 
@@ -55,13 +47,14 @@ pub fn is_ads_webview_occluded(
         }
 
         if window_counts_as_occluder(hwnd)
-            && let Some(window_rect) = window_rect(hwnd)
-            && let Some(intersection) = intersect_rects(&ad_rect, &window_rect)
+            && let Some(occluder_rect) = window_rect(hwnd)
+            && let Some(intersection) =
+                intersect_rects(&app_window_rect, &occluder_rect)
         {
             occluded_area =
                 occluded_area.saturating_add(rect_area(&intersection));
 
-            if (occluded_area as f64 / ad_area as f64)
+            if (occluded_area as f64 / window_area as f64)
                 >= OCCLUDED_AREA_THRESHOLD
             {
                 return true;
@@ -75,32 +68,6 @@ pub fn is_ads_webview_occluded(
     }
 
     false
-}
-
-fn ad_rect_in_screen(
-    main_hwnd: HWND,
-    x: i32,
-    y: i32,
-    width: u32,
-    height: u32,
-) -> Option<RECT> {
-    let mut origin = POINT { x: 0, y: 0 };
-
-    if !unsafe { ClientToScreen(main_hwnd, &mut origin).as_bool() } {
-        return None;
-    }
-
-    let left = origin.x.saturating_add(x);
-    let top = origin.y.saturating_add(y);
-    let right = left.saturating_add(width as i32);
-    let bottom = top.saturating_add(height as i32);
-
-    Some(RECT {
-        left,
-        top,
-        right,
-        bottom,
-    })
 }
 
 fn window_counts_as_occluder(hwnd: HWND) -> bool {

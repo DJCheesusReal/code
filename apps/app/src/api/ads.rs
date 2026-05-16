@@ -143,18 +143,10 @@ fn compute_ads_webview_occlusion<R: Runtime>(
     app: &tauri::AppHandle<R>,
 ) -> Option<bool> {
     let main_window = app.get_window("main")?;
-    let webviews = app.webviews();
-    let webview = webviews.get("ads-window")?;
-    let position = webview.position().ok()?;
-    let size = webview.size().ok()?;
     let hwnd = main_window.hwnd().ok()?;
 
-    Some(crate::api::ads_occlusion_windows::is_ads_webview_occluded(
+    Some(crate::api::ads_occlusion_windows::is_app_window_occluded(
         hwnd,
-        position.x,
-        position.y,
-        size.width,
-        size.height,
     ))
 }
 
@@ -256,17 +248,25 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             }));
 
             // We refresh the ads window every 5 minutes to mitigate memory leak issues.
-            // While this loop doesn't include explicit checks to see if the window is still
-            // visible when we refresh, the Aditude wrapper will not make any ad requests
-            // unless Chromium reports the page as visible. The refresh does not reset the
-            // visibility state.
+            // Skip refreshes when app state has hidden the ads WebView. The refresh does
+            // not reset the visibility state.
             let refresh_app = app.clone();
             tauri::async_runtime::spawn(async move {
                 loop {
-                    if let Some(webview) =
-                        refresh_app.webviews().get_mut("ads-window")
-                    {
-                        let _ = webview.navigate(AD_LINK.parse().unwrap());
+                    let should_refresh = refresh_app
+                        .state::<RwLock<AdsState>>()
+                        .try_read()
+                        .map(|state| {
+                            state.shown && !state.modal_shown && !state.occluded
+                        })
+                        .unwrap_or(false);
+
+                    if should_refresh {
+                        if let Some(webview) =
+                            refresh_app.webviews().get_mut("ads-window")
+                        {
+                            let _ = webview.navigate(AD_LINK.parse().unwrap());
+                        }
                     }
 
                     tokio::time::sleep(std::time::Duration::from_secs(60 * 5))
