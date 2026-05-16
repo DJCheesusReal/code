@@ -2,8 +2,6 @@ use std::collections::HashSet;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
-#[cfg(windows)]
-use tauri::Emitter;
 use tauri::plugin::TauriPlugin;
 use tauri::{Manager, PhysicalPosition, PhysicalSize, Runtime};
 use tauri_plugin_opener::OpenerExt;
@@ -16,13 +14,6 @@ pub struct AdsState {
     pub occluded: bool,
     pub last_click: Option<Instant>,
     pub malicious_origins: HashSet<String>,
-}
-
-#[cfg(windows)]
-#[derive(Clone, serde::Serialize)]
-struct AdsOcclusionDebugPayload {
-    occluded: bool,
-    webview_visible: bool,
 }
 
 const AD_LINK: &str = "https://modrinth.com/wrapper/app-ads-cookie";
@@ -166,25 +157,6 @@ async fn sync_ads_occlusion<R: Runtime>(app: &tauri::AppHandle<R>) {
     state.occluded = occluded;
     let visible = state.shown && !state.modal_shown;
     drop(state);
-    let is_minimized = app
-        .get_window("main")
-        .and_then(|window| window.is_minimized().ok())
-        .unwrap_or(false);
-    let webview_visible = visible && !is_minimized && !occluded;
-
-    tracing::info!(
-        occluded,
-        webview_visible,
-        "Ads WebView desktop occlusion changed"
-    );
-
-    let _ = app.emit(
-        "ads-occlusion-debug",
-        AdsOcclusionDebugPayload {
-            occluded,
-            webview_visible,
-        },
-    );
 
     if let Some(webview) = app.webviews().get("ads-window") {
         set_webview_visible_for_window(app, webview, visible);

@@ -94,10 +94,6 @@ export async function warning_listener(callback) {
 	return await listen('warning', (event) => callback(event.payload))
 }
 
-export async function ads_occlusion_debug_listener(callback) {
-	return await listen('ads-occlusion-debug', (event) => callback(event.payload))
-}
-
 export async function friend_listener(callback) {
 	return await listen('friend', (event) => callback(event.payload))
 }

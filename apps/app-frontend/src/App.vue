@@ -95,11 +95,7 @@ import { hide_ads_window, init_ads_window, show_ads_window } from '@/helpers/ads
 import { debugAnalytics, initAnalytics, trackEvent } from '@/helpers/analytics'
 import { check_reachable } from '@/helpers/auth.js'
 import { get_user, get_version } from '@/helpers/cache.js'
-import {
-	ads_occlusion_debug_listener,
-	command_listener,
-	warning_listener,
-} from '@/helpers/events.js'
+import { command_listener, warning_listener } from '@/helpers/events.js'
 import { cancelLogin, get as getCreds, login, logout } from '@/helpers/mr_auth.ts'
 import { create_profile_and_install_from_file } from '@/helpers/pack'
 import { list } from '@/helpers/profile.js'
@@ -372,16 +368,6 @@ async function setupApp() {
 			title: 'Warning',
 			text: e.message,
 			type: 'warn',
-		}),
-	)
-
-	await ads_occlusion_debug_listener((e) =>
-		addNotification({
-			title: 'Ads occlusion debug',
-			text: e.occluded
-				? 'Ad WebView is occluded by another desktop window and was hidden.'
-				: 'Ad WebView is no longer occluded and can be shown.',
-			type: e.occluded ? 'warn' : 'success',
 		}),
 	)
 
