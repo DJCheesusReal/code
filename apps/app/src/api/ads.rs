@@ -134,10 +134,18 @@ fn compute_ads_webview_occlusion<R: Runtime>(
     app: &tauri::AppHandle<R>,
 ) -> Option<bool> {
     let main_window = app.get_window("main")?;
+    let webviews = app.webviews();
+    let webview = webviews.get("ads-window")?;
+    let position = webview.position().ok()?;
+    let size = webview.size().ok()?;
     let hwnd = main_window.hwnd().ok()?;
 
-    Some(crate::api::ads_occlusion_windows::is_app_window_occluded(
+    Some(crate::api::ads_occlusion_windows::is_ads_webview_occluded(
         hwnd,
+        position.x,
+        position.y,
+        size.width,
+        size.height,
     ))
 }
 
