@@ -233,12 +233,11 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
                         })
                         .unwrap_or(false);
 
-                    if should_refresh {
-                        if let Some(webview) =
+                    if should_refresh
+                        && let Some(webview) =
                             refresh_app.webviews().get_mut("ads-window")
-                        {
-                            let _ = webview.navigate(AD_LINK.parse().unwrap());
-                        }
+                    {
+                        let _ = webview.navigate(AD_LINK.parse().unwrap());
                     }
 
                     tokio::time::sleep(std::time::Duration::from_secs(60 * 5))
